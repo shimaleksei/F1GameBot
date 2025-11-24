@@ -62,8 +62,8 @@ class EnterResultsStates(StatesGroup):
 async def cmd_admin_races(message: Message):
     """Handle /admin_races command (F-003, C-006)."""
     await message.answer(
-        "🏁 <b>Race Management</b>\n\n"
-        "Choose an action:",
+        "🏁 <b>Управление гонками</b>\n\n"
+        "Выберите действие:",
         reply_markup=get_admin_races_menu()
     )
 
@@ -71,7 +71,7 @@ async def cmd_admin_races(message: Message):
 @router.message(Command("admin_races"))
 async def cmd_admin_races_not_admin(message: Message):
     """Handle /admin_races command for non-admins."""
-    await message.answer("You are not allowed to use this command.")
+    await message.answer("Вам не разрешено использовать эту команду.")
 
 
 # View races
@@ -82,19 +82,20 @@ async def callback_view_races(callback: CallbackQuery):
     
     if not races:
         await callback.message.edit_text(
-            "📋 <b>All Races</b>\n\n"
-            "No races found. Add your first race!",
+            "📋 <b>Все гонки</b>\n\n"
+            "Гонки не найдены. Добавьте первую гонку!",
             reply_markup=get_admin_races_menu()
         )
         await callback.answer()
         return
     
-    text = "📋 <b>All Races</b>\n\n"
+    text = "📋 <b>Все гонки</b>\n\n"
     for race in races:
         status_emoji = "✅" if race.status == "finished" else "🏁"
+        status_text = "Завершена" if race.status == "finished" else "Предстоящая"
         text += f"{status_emoji} <b>{race.name}</b>\n"
-        text += f"   📅 {race.date} at {race.start_time} ({race.timezone})\n"
-        text += f"   Status: {race.status}\n\n"
+        text += f"   📅 {race.date} в {race.start_time} ({race.timezone})\n"
+        text += f"   Статус: {status_text}\n\n"
     
     await callback.message.edit_text(text, reply_markup=get_admin_races_menu())
     await callback.answer()
@@ -106,8 +107,8 @@ async def callback_add_race_start(callback: CallbackQuery, state: FSMContext):
     """Start add race flow."""
     await state.set_state(AddRaceStates.waiting_for_name)
     await callback.message.edit_text(
-        "➕ <b>Add New Race</b>\n\n"
-        "Please send the race name (e.g., 'Bahrain Grand Prix'):",
+        "➕ <b>Добавить новую гонку</b>\n\n"
+        "Отправьте название гонки (например, 'Гран-при Бахрейна'):",
         reply_markup=get_cancel_keyboard("admin_races_cancel")
     )
     await callback.answer()
@@ -118,15 +119,15 @@ async def process_race_name(message: Message, state: FSMContext):
     """Process race name."""
     race_name = message.text.strip()
     if not race_name:
-        await message.answer("Please send a valid race name:")
+        await message.answer("Пожалуйста, отправьте корректное название гонки:")
         return
     
     await state.update_data(race_name=race_name)
     await state.set_state(AddRaceStates.waiting_for_date)
     await message.answer(
-        f"Race name: <b>{race_name}</b>\n\n"
-        "Now send the race date in format <b>YYYY-MM-DD</b>\n"
-        "Example: 2025-03-02",
+        f"Название гонки: <b>{race_name}</b>\n\n"
+        "Теперь отправьте дату гонки в формате <b>YYYY-MM-DD</b>\n"
+        "Пример: 2025-03-02",
         reply_markup=get_cancel_keyboard("admin_races_cancel")
     )
 
@@ -142,8 +143,8 @@ async def process_race_date(message: Message, state: FSMContext):
         datetime.strptime(date_str, "%Y-%m-%d")
     except ValueError:
         await message.answer(
-            "I don't understand this date. Please use the format <b>YYYY-MM-DD</b>\n"
-            "Example: 2025-03-02",
+            "Я не понимаю эту дату. Пожалуйста, используйте формат <b>YYYY-MM-DD</b>\n"
+            "Пример: 2025-03-02",
             reply_markup=get_cancel_keyboard("admin_races_cancel")
         )
         return
@@ -151,9 +152,9 @@ async def process_race_date(message: Message, state: FSMContext):
     await state.update_data(race_date=date_str)
     await state.set_state(AddRaceStates.waiting_for_time)
     await message.answer(
-        f"Date: <b>{date_str}</b>\n\n"
-        "Now send the race start time in format <b>HH:MM</b> (24-hour format)\n"
-        "Example: 16:00",
+        f"Дата: <b>{date_str}</b>\n\n"
+        "Теперь отправьте время старта гонки в формате <b>HH:MM</b> (24-часовой формат)\n"
+        "Пример: 16:00",
         reply_markup=get_cancel_keyboard("admin_races_cancel")
     )
 
@@ -169,8 +170,8 @@ async def process_race_time(message: Message, state: FSMContext):
         datetime.strptime(time_str, "%H:%M")
     except ValueError:
         await message.answer(
-            "I don't understand this time. Please use the format <b>HH:MM</b> (24-hour format)\n"
-            "Example: 16:00",
+            "Я не понимаю это время. Пожалуйста, используйте формат <b>HH:MM</b> (24-часовой формат)\n"
+            "Пример: 16:00",
             reply_markup=get_cancel_keyboard("admin_races_cancel")
         )
         return
@@ -182,18 +183,19 @@ async def process_race_time(message: Message, state: FSMContext):
     # Create race
     try:
         race = await create_race(race_name, race_date, time_str, DEFAULT_TIMEZONE)
+        status_text = "Завершена" if race.status == "finished" else "Предстоящая"
         await message.answer(
-            f"✅ <b>Race added successfully!</b>\n\n"
-            f"Name: <b>{race.name}</b>\n"
-            f"Date: {race.date}\n"
-            f"Time: {race.start_time} ({race.timezone})\n"
-            f"Status: {race.status}",
+            f"✅ <b>Гонка успешно добавлена!</b>\n\n"
+            f"Название: <b>{race.name}</b>\n"
+            f"Дата: {race.date}\n"
+            f"Время: {race.start_time} ({race.timezone})\n"
+            f"Статус: {status_text}",
             reply_markup=get_admin_races_menu()
         )
     except Exception as e:
         await message.answer(
-            f"❌ Error creating race: {str(e)}\n\n"
-            "Please try again.",
+            f"❌ Ошибка при создании гонки: {str(e)}\n\n"
+            "Попробуйте снова.",
             reply_markup=get_admin_races_menu()
         )
     
@@ -208,7 +210,7 @@ async def callback_edit_race_start(callback: CallbackQuery, state: FSMContext):
     
     if not races:
         await callback.message.edit_text(
-            "No races found. Add your first race!",
+            "Гонки не найдены. Добавьте первую гонку!",
             reply_markup=get_admin_races_menu()
         )
         await callback.answer()
@@ -216,8 +218,8 @@ async def callback_edit_race_start(callback: CallbackQuery, state: FSMContext):
     
     await state.set_state(EditRaceStates.waiting_for_race)
     await callback.message.edit_text(
-        "✏️ <b>Edit Race</b>\n\n"
-        "Select a race to edit:",
+        "✏️ <b>Редактировать гонку</b>\n\n"
+        "Выберите гонку для редактирования:",
         reply_markup=get_race_list_keyboard(races, "edit_race")
     )
     await callback.answer()
@@ -230,9 +232,9 @@ async def callback_edit_race_select(callback: CallbackQuery, state: FSMContext):
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("I cannot find this race. Please check the ID.", show_alert=True)
+        await callback.answer("Я не могу найти эту гонку. Проверьте ID.", show_alert=True)
         await callback.message.edit_text(
-            "Race not found.",
+            "Гонка не найдена.",
             reply_markup=get_admin_races_menu()
         )
         await state.clear()
@@ -245,21 +247,22 @@ async def callback_edit_race_select(callback: CallbackQuery, state: FSMContext):
     from aiogram.utils.keyboard import InlineKeyboardBuilder
     
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="📝 Name", callback_data="edit_field_name"))
-    builder.add(InlineKeyboardButton(text="📅 Date", callback_data="edit_field_date"))
-    builder.add(InlineKeyboardButton(text="⏰ Time", callback_data="edit_field_time"))
-    builder.add(InlineKeyboardButton(text="🌍 Timezone", callback_data="edit_field_timezone"))
-    builder.add(InlineKeyboardButton(text="📊 Status", callback_data="edit_field_status"))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data="admin_races_cancel"))
+    builder.add(InlineKeyboardButton(text="📝 Название", callback_data="edit_field_name"))
+    builder.add(InlineKeyboardButton(text="📅 Дата", callback_data="edit_field_date"))
+    builder.add(InlineKeyboardButton(text="⏰ Время", callback_data="edit_field_time"))
+    builder.add(InlineKeyboardButton(text="🌍 Часовой пояс", callback_data="edit_field_timezone"))
+    builder.add(InlineKeyboardButton(text="📊 Статус", callback_data="edit_field_status"))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data="admin_races_cancel"))
     builder.adjust(2, 2, 1, 1)
     
+    status_text = "Завершена" if race.status == "finished" else "Предстоящая"
     await callback.message.edit_text(
-        f"✏️ <b>Edit Race</b>\n\n"
-        f"Race: <b>{race.name}</b>\n"
-        f"Date: {race.date}\n"
-        f"Time: {race.start_time} ({race.timezone})\n"
-        f"Status: {race.status}\n\n"
-        "What would you like to edit?",
+        f"✏️ <b>Редактировать гонку</b>\n\n"
+        f"Гонка: <b>{race.name}</b>\n"
+        f"Дата: {race.date}\n"
+        f"Время: {race.start_time} ({race.timezone})\n"
+        f"Статус: {status_text}\n\n"
+        "Что вы хотите изменить?",
         reply_markup=builder.as_markup()
     )
     await callback.answer()
@@ -273,16 +276,24 @@ async def callback_edit_field_select(callback: CallbackQuery, state: FSMContext)
     await state.set_state(EditRaceStates.waiting_for_value)
     
     field_prompts = {
-        "name": "Send the new race name:",
-        "date": "Send the new date in format <b>YYYY-MM-DD</b>:",
-        "time": "Send the new time in format <b>HH:MM</b>:",
-        "timezone": "Send the new timezone (e.g., UTC, Europe/Moscow):",
-        "status": "Send the new status (<b>upcoming</b> or <b>finished</b>):"
+        "name": "Отправьте новое название гонки:",
+        "date": "Отправьте новую дату в формате <b>YYYY-MM-DD</b>:",
+        "time": "Отправьте новое время в формате <b>HH:MM</b>:",
+        "timezone": "Отправьте новый часовой пояс (например, UTC, Europe/Moscow):",
+        "status": "Отправьте новый статус (<b>upcoming</b> или <b>finished</b>):"
+    }
+    
+    field_names = {
+        "name": "Название",
+        "date": "Дата",
+        "time": "Время",
+        "timezone": "Часовой пояс",
+        "status": "Статус"
     }
     
     await callback.message.edit_text(
-        f"✏️ <b>Edit {field.capitalize()}</b>\n\n"
-        f"{field_prompts.get(field, 'Send the new value:')}",
+        f"✏️ <b>Редактировать {field_names.get(field, field.capitalize())}</b>\n\n"
+        f"{field_prompts.get(field, 'Отправьте новое значение:')}",
         reply_markup=get_cancel_keyboard("admin_races_cancel")
     )
     await callback.answer()
@@ -298,7 +309,7 @@ async def process_edit_value(message: Message, state: FSMContext):
     
     race = await get_race_by_id(race_id)
     if not race:
-        await message.answer("Race not found.", reply_markup=get_admin_races_menu())
+        await message.answer("Гонка не найдена.", reply_markup=get_admin_races_menu())
         await state.clear()
         return
     
@@ -309,7 +320,7 @@ async def process_edit_value(message: Message, state: FSMContext):
             datetime.strptime(value, "%Y-%m-%d")
         except ValueError:
             await message.answer(
-                "I don't understand this date. Please use the format <b>YYYY-MM-DD</b>",
+                "Я не понимаю эту дату. Пожалуйста, используйте формат <b>YYYY-MM-DD</b>",
                 reply_markup=get_cancel_keyboard("admin_races_cancel")
             )
             return
@@ -319,14 +330,14 @@ async def process_edit_value(message: Message, state: FSMContext):
             datetime.strptime(value, "%H:%M")
         except ValueError:
             await message.answer(
-                "I don't understand this time. Please use the format <b>HH:MM</b>",
+                "Я не понимаю это время. Пожалуйста, используйте формат <b>HH:MM</b>",
                 reply_markup=get_cancel_keyboard("admin_races_cancel")
             )
             return
     elif field == "status":
         if value.lower() not in ["upcoming", "finished"]:
             await message.answer(
-                "Status must be either <b>upcoming</b> or <b>finished</b>",
+                "Статус должен быть либо <b>upcoming</b>, либо <b>finished</b>",
                 reply_markup=get_cancel_keyboard("admin_races_cancel")
             )
             return
@@ -337,17 +348,18 @@ async def process_edit_value(message: Message, state: FSMContext):
     updated_race = await update_race(race_id, **update_data)
     
     if updated_race:
+        status_text = "Завершена" if updated_race.status == "finished" else "Предстоящая"
         await message.answer(
-            f"✅ <b>Race updated successfully!</b>\n\n"
-            f"Name: <b>{updated_race.name}</b>\n"
-            f"Date: {updated_race.date}\n"
-            f"Time: {updated_race.start_time} ({updated_race.timezone})\n"
-            f"Status: {updated_race.status}",
+            f"✅ <b>Гонка успешно обновлена!</b>\n\n"
+            f"Название: <b>{updated_race.name}</b>\n"
+            f"Дата: {updated_race.date}\n"
+            f"Время: {updated_race.start_time} ({updated_race.timezone})\n"
+            f"Статус: {status_text}",
             reply_markup=get_admin_races_menu()
         )
     else:
         await message.answer(
-            "❌ Error updating race. Please try again.",
+            "❌ Ошибка при обновлении гонки. Попробуйте снова.",
             reply_markup=get_admin_races_menu()
         )
     
@@ -362,7 +374,7 @@ async def callback_delete_race_start(callback: CallbackQuery, state: FSMContext)
     
     if not races:
         await callback.message.edit_text(
-            "No races found. Add your first race!",
+            "Гонки не найдены. Добавьте первую гонку!",
             reply_markup=get_admin_races_menu()
         )
         await callback.answer()
@@ -370,9 +382,9 @@ async def callback_delete_race_start(callback: CallbackQuery, state: FSMContext)
     
     await state.set_state(DeleteRaceStates.waiting_for_race)
     await callback.message.edit_text(
-        "🗑️ <b>Delete Race</b>\n\n"
-        "⚠️ <b>Warning:</b> This will delete the race and all associated bets!\n\n"
-        "Select a race to delete:",
+        "🗑️ <b>Удалить гонку</b>\n\n"
+        "⚠️ <b>Внимание:</b> Это удалит гонку и все связанные ставки!\n\n"
+        "Выберите гонку для удаления:",
         reply_markup=get_race_list_keyboard(races, "delete_race")
     )
     await callback.answer()
@@ -385,9 +397,9 @@ async def callback_delete_race_select(callback: CallbackQuery, state: FSMContext
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("I cannot find this race. Please check the ID.", show_alert=True)
+        await callback.answer("Я не могу найти эту гонку. Проверьте ID.", show_alert=True)
         await callback.message.edit_text(
-            "Race not found.",
+            "Гонка не найдена.",
             reply_markup=get_admin_races_menu()
         )
         await state.clear()
@@ -397,12 +409,12 @@ async def callback_delete_race_select(callback: CallbackQuery, state: FSMContext
     await state.set_state(DeleteRaceStates.waiting_for_confirm)
     
     await callback.message.edit_text(
-        f"🗑️ <b>Delete Race</b>\n\n"
-        f"⚠️ <b>Warning:</b> This will permanently delete:\n"
-        f"• Race: <b>{race.name}</b>\n"
-        f"• Date: {race.date} at {race.start_time}\n"
-        f"• All bets for this race\n\n"
-        f"Are you sure?",
+        f"🗑️ <b>Удалить гонку</b>\n\n"
+        f"⚠️ <b>Внимание:</b> Это навсегда удалит:\n"
+        f"• Гонку: <b>{race.name}</b>\n"
+        f"• Дата: {race.date} в {race.start_time}\n"
+        f"• Все ставки на эту гонку\n\n"
+        f"Вы уверены?",
         reply_markup=get_confirm_keyboard(f"confirm_delete_{race_id}", "admin_races_cancel")
     )
     await callback.answer()
@@ -415,9 +427,9 @@ async def callback_delete_race_confirm(callback: CallbackQuery, state: FSMContex
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         await callback.message.edit_text(
-            "Race not found.",
+            "Гонка не найдена.",
             reply_markup=get_admin_races_menu()
         )
         await state.clear()
@@ -427,13 +439,13 @@ async def callback_delete_race_confirm(callback: CallbackQuery, state: FSMContex
     
     if success:
         await callback.message.edit_text(
-            f"✅ <b>Race deleted successfully!</b>\n\n"
-            f"Deleted: <b>{race.name}</b>",
+            f"✅ <b>Гонка успешно удалена!</b>\n\n"
+            f"Удалена: <b>{race.name}</b>",
             reply_markup=get_admin_races_menu()
         )
     else:
         await callback.message.edit_text(
-            "❌ Error deleting race. Please try again.",
+            "❌ Ошибка при удалении гонки. Попробуйте снова.",
             reply_markup=get_admin_races_menu()
         )
     
@@ -447,7 +459,7 @@ async def callback_cancel(callback: CallbackQuery, state: FSMContext):
     """Cancel current operation."""
     await state.clear()
     await callback.message.edit_text(
-        "❌ Operation cancelled.",
+        "❌ Операция отменена.",
         reply_markup=get_admin_races_menu()
     )
     await callback.answer()
@@ -461,15 +473,15 @@ async def cmd_results(message: Message, state: FSMContext):
     
     if not races:
         await message.answer(
-            "🏁 <b>Enter Race Results</b>\n\n"
-            "All races have results entered. Add a new race to enter results."
+            "🏁 <b>Ввести результаты гонки</b>\n\n"
+            "Для всех гонок уже введены результаты. Добавьте новую гонку, чтобы ввести результаты."
         )
         return
     
     await state.set_state(EnterResultsStates.waiting_for_race)
     await message.answer(
-        "🏁 <b>Enter Race Results</b>\n\n"
-        "Select a race to enter results:",
+        "🏁 <b>Ввести результаты гонки</b>\n\n"
+        "Выберите гонку для ввода результатов:",
         reply_markup=get_race_list_keyboard(races, "result_race")
     )
 
@@ -477,7 +489,7 @@ async def cmd_results(message: Message, state: FSMContext):
 @router.message(Command("results"))
 async def cmd_results_not_admin(message: Message):
     """Handle /results command for non-admins."""
-    await message.answer("You are not allowed to set results.")
+    await message.answer("Вам не разрешено вводить результаты.")
 
 
 @router.callback_query(F.data.startswith("result_race_"), AdminFilter())
@@ -487,8 +499,8 @@ async def callback_result_race_select(callback: CallbackQuery, state: FSMContext
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
-        await callback.message.edit_text("Race not found.")
+        await callback.answer("Гонка не найдена.", show_alert=True)
+        await callback.message.edit_text("Гонка не найдена.")
         await state.clear()
         return
     
@@ -496,13 +508,13 @@ async def callback_result_race_select(callback: CallbackQuery, state: FSMContext
     existing_result = await get_result_by_race_id(race_id)
     if existing_result:
         await callback.message.edit_text(
-            f"⚠️ <b>Results Already Set</b>\n\n"
-            f"Race: <b>{race.name}</b>\n"
-            f"Current results:\n"
+            f"⚠️ <b>Результаты уже введены</b>\n\n"
+            f"Гонка: <b>{race.name}</b>\n"
+            f"Текущие результаты:\n"
             f"1️⃣ {existing_result.driver_1st}\n"
             f"2️⃣ {existing_result.driver_2nd}\n"
             f"3️⃣ {existing_result.driver_3rd}\n\n"
-            "Do you want to overwrite?",
+            "Хотите перезаписать?",
             reply_markup=get_confirm_keyboard(f"overwrite_result_{race_id}", "cancel_results")
         )
         await callback.answer()
@@ -547,18 +559,18 @@ async def show_result_driver_selection(callback: CallbackQuery, state: FSMContex
                 text=f"{driver.code} - {driver.full_name}",
                 callback_data=f"result_driver_{position}_{driver.code}"
             ))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_results"))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_results"))
     builder.adjust(2)
     
     position_text = {
-        "1st": "🥇 1st place",
-        "2nd": "🥈 2nd place",
-        "3rd": "🥉 3rd place"
+        "1st": "🥇 1-е место",
+        "2nd": "🥈 2-е место",
+        "3rd": "🥉 3-е место"
     }
     
     await callback.message.edit_text(
-        f"🏁 <b>Enter Race Results</b>\n\n"
-        f"Select driver for {position_text[position]}:",
+        f"🏁 <b>Ввести результаты гонки</b>\n\n"
+        f"Выберите гонщика для {position_text[position]}:",
         reply_markup=builder.as_markup()
     )
 
@@ -595,7 +607,7 @@ async def callback_result_driver_3rd(callback: CallbackQuery, state: FSMContext)
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         await state.clear()
         return
     
@@ -604,15 +616,15 @@ async def callback_result_driver_3rd(callback: CallbackQuery, state: FSMContext)
     driver_3rd = await get_driver_by_code(data.get("driver_3rd"))
     
     summary_text = (
-        f"🏁 <b>Confirm Race Results</b>\n\n"
-        f"Race: <b>{race.name}</b>\n"
-        f"Date: {race.date} at {race.start_time}\n\n"
-        f"Results:\n"
-        f"🥇 1st: {driver_1st.code if driver_1st else data.get('driver_1st')} - {driver_1st.full_name if driver_1st else ''}\n"
-        f"🥈 2nd: {driver_2nd.code if driver_2nd else data.get('driver_2nd')} - {driver_2nd.full_name if driver_2nd else ''}\n"
-        f"🥉 3rd: {driver_3rd.code if driver_3rd else data.get('driver_3rd')} - {driver_3rd.full_name if driver_3rd else ''}\n\n"
-        f"After confirmation, points will be calculated for all bets.\n\n"
-        f"Confirm?"
+        f"🏁 <b>Подтвердите результаты гонки</b>\n\n"
+        f"Гонка: <b>{race.name}</b>\n"
+        f"Дата: {race.date} в {race.start_time}\n\n"
+        f"Результаты:\n"
+        f"🥇 1-е: {driver_1st.code if driver_1st else data.get('driver_1st')} - {driver_1st.full_name if driver_1st else ''}\n"
+        f"🥈 2-е: {driver_2nd.code if driver_2nd else data.get('driver_2nd')} - {driver_2nd.full_name if driver_2nd else ''}\n"
+        f"🥉 3-е: {driver_3rd.code if driver_3rd else data.get('driver_3rd')} - {driver_3rd.full_name if driver_3rd else ''}\n\n"
+        f"После подтверждения очки будут рассчитаны для всех ставок.\n\n"
+        f"Подтвердить?"
     )
     
     await callback.message.edit_text(
@@ -633,7 +645,7 @@ async def callback_confirm_results(callback: CallbackQuery, state: FSMContext):
     
     race = await get_race_by_id(race_id)
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         await state.clear()
         return
     
@@ -654,36 +666,36 @@ async def callback_confirm_results(callback: CallbackQuery, state: FSMContext):
         driver_3rd_obj = await get_driver_by_code(driver_3rd)
         
         summary_text = (
-            f"✅ <b>Results Saved!</b>\n\n"
-            f"Race: <b>{race.name}</b>\n"
-            f"Date: {race.date}\n\n"
-            f"Results:\n"
-            f"🥇 1st: {driver_1st_obj.code if driver_1st_obj else driver_1st} - {driver_1st_obj.full_name if driver_1st_obj else ''}\n"
-            f"🥈 2nd: {driver_2nd_obj.code if driver_2nd_obj else driver_2nd} - {driver_2nd_obj.full_name if driver_2nd_obj else ''}\n"
-            f"🥉 3rd: {driver_3rd_obj.code if driver_3rd_obj else driver_3rd} - {driver_3rd_obj.full_name if driver_3rd_obj else ''}\n\n"
+            f"✅ <b>Результаты сохранены!</b>\n\n"
+            f"Гонка: <b>{race.name}</b>\n"
+            f"Дата: {race.date}\n\n"
+            f"Результаты:\n"
+            f"🥇 1-е: {driver_1st_obj.code if driver_1st_obj else driver_1st} - {driver_1st_obj.full_name if driver_1st_obj else ''}\n"
+            f"🥈 2-е: {driver_2nd_obj.code if driver_2nd_obj else driver_2nd} - {driver_2nd_obj.full_name if driver_2nd_obj else ''}\n"
+            f"🥉 3-е: {driver_3rd_obj.code if driver_3rd_obj else driver_3rd} - {driver_3rd_obj.full_name if driver_3rd_obj else ''}\n\n"
         )
         
         if points_summary:
             # Sort by points descending
             points_summary.sort(key=lambda x: x['points'], reverse=True)
-            summary_text += "📊 <b>Top Scorers:</b>\n\n"
+            summary_text += "📊 <b>Топ игроков:</b>\n\n"
             for i, entry in enumerate(points_summary[:5], 1):  # Top 5
                 medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-                summary_text += f"{medal} {entry['user_name']} – {entry['points']} points\n"
+                summary_text += f"{medal} {entry['user_name']} – {entry['points']} очков\n"
         else:
-            summary_text += "No bets were placed for this race.\n"
+            summary_text += "На эту гонку не было сделано ставок.\n"
         
         await callback.message.edit_text(summary_text)
-        await callback.answer("Results saved and points calculated!")
+        await callback.answer("Результаты сохранены и очки рассчитаны!")
         
     except Exception as e:
         await callback.answer(
-            f"I could not calculate scores. Please try again later or contact the admin.",
+            f"Не удалось рассчитать очки. Попробуйте позже или свяжитесь с администратором.",
             show_alert=True
         )
         await callback.message.edit_text(
-            f"❌ Error saving results: {str(e)}\n\n"
-            "Please try again."
+            f"❌ Ошибка при сохранении результатов: {str(e)}\n\n"
+            "Попробуйте снова."
         )
     
     await state.clear()
@@ -693,6 +705,6 @@ async def callback_confirm_results(callback: CallbackQuery, state: FSMContext):
 async def callback_cancel_results(callback: CallbackQuery, state: FSMContext):
     """Handle results cancellation."""
     await state.clear()
-    await callback.message.edit_text("❌ Results entry cancelled.")
+    await callback.message.edit_text("❌ Ввод результатов отменен.")
     await callback.answer()
 

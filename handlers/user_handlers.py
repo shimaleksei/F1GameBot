@@ -39,28 +39,28 @@ async def cmd_start_help(message: Message):
         
         # Welcome message
         welcome_text = (
-            "Hi! I'm an F1 betting bot. I help you place virtual bets on the top 3 drivers for each race.\n\n"
-            "📋 Main commands:\n"
-            "• /bet – place or change a bet\n"
-            "• /my_bets – see your current bets\n"
-            "• /leaderboard – see top players\n"
-            "• /me – see your points\n"
+            "Привет! Я бот для ставок на Формулу 1. Я помогаю делать виртуальные ставки на топ-3 гонщиков перед каждой гонкой.\n\n"
+            "📋 Основные команды:\n"
+            "• /bet – сделать или изменить ставку\n"
+            "• /my_bets – посмотреть свои ставки\n"
+            "• /leaderboard – таблица лидеров\n"
+            "• /me – моя статистика\n"
         )
         
         # Add admin commands if user is admin
         if is_admin(message.from_user.id):
             welcome_text += (
-                "\n🔧 Admin commands:\n"
-                "• /admin_races – manage races\n"
-                "• /upload_races – upload race calendar\n"
-                "• /results – enter race results\n"
+                "\n🔧 Команды администратора:\n"
+                "• /admin_races – управление гонками\n"
+                "• /upload_races – загрузить календарь гонок\n"
+                "• /results – ввести результаты гонки\n"
             )
         
         await message.answer(welcome_text)
         
     except Exception as e:
         await message.answer(
-            "Sorry, something went wrong. Please try again with /start."
+            "Извините, что-то пошло не так. Попробуйте снова с /start."
         )
 
 
@@ -86,9 +86,9 @@ async def cmd_bet(message: Message, state: FSMContext):
         
         if not open_races:
             await message.answer(
-                "🏁 <b>Place a Bet</b>\n\n"
-                "There are no races open for betting at the moment.\n"
-                "Check back later or ask an admin to add races."
+                "🏁 <b>Сделать ставку</b>\n\n"
+                "Сейчас нет гонок, открытых для ставок.\n"
+                "Проверьте позже или попросите администратора добавить гонки."
             )
             return
         
@@ -99,12 +99,12 @@ async def cmd_bet(message: Message, state: FSMContext):
             existing_bet = await get_bet(user.id, race.id)
             if existing_bet:
                 await message.answer(
-                    f"🏁 <b>Place a Bet</b>\n\n"
-                    f"You already have a bet for <b>{race.name}</b>:\n"
+                    f"🏁 <b>Сделать ставку</b>\n\n"
+                    f"У вас уже есть ставка на <b>{race.name}</b>:\n"
                     f"1️⃣ {existing_bet.driver_1st}\n"
                     f"2️⃣ {existing_bet.driver_2nd}\n"
                     f"3️⃣ {existing_bet.driver_3rd}\n\n"
-                    "Do you want to replace it?",
+                    "Хотите заменить её?",
                     reply_markup=get_cancel_keyboard("cancel_bet")
                 )
                 await state.update_data(race_id=race.id, existing_bet=True)
@@ -126,14 +126,14 @@ async def cmd_bet(message: Message, state: FSMContext):
             builder.adjust(1)
             
             await message.answer(
-                "🏁 <b>Place a Bet</b>\n\n"
-                "Select a race:",
+                "🏁 <b>Сделать ставку</b>\n\n"
+                "Выберите гонку:",
                 reply_markup=builder.as_markup()
             )
     
     except Exception as e:
         await message.answer(
-            "I cannot load the race list. Please try again later."
+            "Не удалось загрузить список гонок. Попробуйте позже."
         )
 
 
@@ -144,16 +144,16 @@ async def callback_bet_race_select(callback: CallbackQuery, state: FSMContext):
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
-        await callback.message.edit_text("Race not found.")
+        await callback.answer("Гонка не найдена.", show_alert=True)
+        await callback.message.edit_text("Гонка не найдена.")
         await state.clear()
         return
     
     # Check if betting is still open
     if not is_betting_open(race.date, race.start_time, race.timezone):
-        await callback.answer("Betting for this race is closed.", show_alert=True)
+        await callback.answer("Ставки на эту гонку закрыты.", show_alert=True)
         await callback.message.edit_text(
-            "❌ Betting for this race is closed."
+            "❌ Ставки на эту гонку закрыты."
         )
         await state.clear()
         return
@@ -161,7 +161,7 @@ async def callback_bet_race_select(callback: CallbackQuery, state: FSMContext):
     # Get user
     user = await get_user_by_telegram_id(callback.from_user.id)
     if not user:
-        await callback.answer("User not found.", show_alert=True)
+        await callback.answer("Пользователь не найден.", show_alert=True)
         await state.clear()
         return
     
@@ -169,12 +169,12 @@ async def callback_bet_race_select(callback: CallbackQuery, state: FSMContext):
     existing_bet = await get_bet(user.id, race.id)
     if existing_bet:
         await callback.message.edit_text(
-            f"🏁 <b>Place a Bet</b>\n\n"
-            f"You already have a bet for <b>{race.name}</b>:\n"
+            f"🏁 <b>Сделать ставку</b>\n\n"
+            f"У вас уже есть ставка на <b>{race.name}</b>:\n"
             f"1️⃣ {existing_bet.driver_1st}\n"
             f"2️⃣ {existing_bet.driver_2nd}\n"
             f"3️⃣ {existing_bet.driver_3rd}\n\n"
-            "Do you want to replace it?",
+            "Хотите заменить её?",
             reply_markup=get_cancel_keyboard("cancel_bet")
         )
         await state.update_data(race_id=race.id, existing_bet=True)
@@ -210,14 +210,14 @@ async def show_driver_selection(message: Message, state: FSMContext, position: s
     builder.adjust(2)
     
     position_text = {
-        "1st": "🥇 1st place",
-        "2nd": "🥈 2nd place",
-        "3rd": "🥉 3rd place"
+        "1st": "🥇 1-е место",
+        "2nd": "🥈 2-е место",
+        "3rd": "🥉 3-е место"
     }
     
     await message.answer(
-        f"🏁 <b>Place a Bet</b>\n\n"
-        f"Select driver for {position_text[position]}:",
+        f"🏁 <b>Сделать ставку</b>\n\n"
+        f"Выберите гонщика для {position_text[position]}:",
         reply_markup=builder.as_markup()
     )
 
@@ -246,14 +246,14 @@ async def show_driver_selection_callback(callback: CallbackQuery, state: FSMCont
     builder.adjust(2)
     
     position_text = {
-        "1st": "🥇 1st place",
-        "2nd": "🥈 2nd place",
-        "3rd": "🥉 3rd place"
+        "1st": "🥇 1-е место",
+        "2nd": "🥈 2-е место",
+        "3rd": "🥉 3-е место"
     }
     
     await callback.message.edit_text(
-        f"🏁 <b>Place a Bet</b>\n\n"
-        f"Select driver for {position_text[position]}:",
+        f"🏁 <b>Сделать ставку</b>\n\n"
+        f"Выберите гонщика для {position_text[position]}:",
         reply_markup=builder.as_markup()
     )
 
@@ -290,7 +290,7 @@ async def callback_bet_driver_3rd(callback: CallbackQuery, state: FSMContext):
     race = await get_race_by_id(race_id)
     
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         await state.clear()
         return
     
@@ -300,19 +300,19 @@ async def callback_bet_driver_3rd(callback: CallbackQuery, state: FSMContext):
     driver_3rd = await get_driver_by_code(data.get("driver_3rd"))
     
     summary_text = (
-        f"🏁 <b>Confirm Your Bet</b>\n\n"
-        f"Race: <b>{race.name}</b>\n"
-        f"Date: {race.date} at {race.start_time}\n\n"
-        f"Your bet:\n"
-        f"🥇 1st: {driver_1st.code if driver_1st else data.get('driver_1st')} - {driver_1st.full_name if driver_1st else ''}\n"
-        f"🥈 2nd: {driver_2nd.code if driver_2nd else data.get('driver_2nd')} - {driver_2nd.full_name if driver_2nd else ''}\n"
-        f"🥉 3rd: {driver_3rd.code if driver_3rd else data.get('driver_3rd')} - {driver_3rd.full_name if driver_3rd else ''}\n\n"
-        f"Confirm?"
+        f"🏁 <b>Подтвердите вашу ставку</b>\n\n"
+        f"Гонка: <b>{race.name}</b>\n"
+        f"Дата: {race.date} в {race.start_time}\n\n"
+        f"Ваша ставка:\n"
+        f"🥇 1-е: {driver_1st.code if driver_1st else data.get('driver_1st')} - {driver_1st.full_name if driver_1st else ''}\n"
+        f"🥈 2-е: {driver_2nd.code if driver_2nd else data.get('driver_2nd')} - {driver_2nd.full_name if driver_2nd else ''}\n"
+        f"🥉 3-е: {driver_3rd.code if driver_3rd else data.get('driver_3rd')} - {driver_3rd.full_name if driver_3rd else ''}\n\n"
+        f"Подтвердить?"
     )
     
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="✅ Confirm", callback_data="bet_confirm"))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data="cancel_bet"))
+    builder.add(InlineKeyboardButton(text="✅ Подтвердить", callback_data="bet_confirm"))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_bet"))
     builder.adjust(2)
     
     await callback.message.edit_text(summary_text, reply_markup=builder.as_markup())
@@ -330,15 +330,15 @@ async def callback_bet_confirm(callback: CallbackQuery, state: FSMContext):
     
     race = await get_race_by_id(race_id)
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         await state.clear()
         return
     
     # Check if betting is still open
     if not is_betting_open(race.date, race.start_time, race.timezone):
-        await callback.answer("Betting for this race is closed.", show_alert=True)
+        await callback.answer("Ставки на эту гонку закрыты.", show_alert=True)
         await callback.message.edit_text(
-            "❌ Betting for this race is closed."
+            "❌ Ставки на эту гонку закрыты."
         )
         await state.clear()
         return
@@ -346,7 +346,7 @@ async def callback_bet_confirm(callback: CallbackQuery, state: FSMContext):
     # Get user
     user = await get_user_by_telegram_id(callback.from_user.id)
     if not user:
-        await callback.answer("User not found.", show_alert=True)
+        await callback.answer("Пользователь не найден.", show_alert=True)
         await state.clear()
         return
     
@@ -361,22 +361,22 @@ async def callback_bet_confirm(callback: CallbackQuery, state: FSMContext):
         
         existing = data.get("existing_bet", False)
         message_text = (
-            f"{'✅ Bet updated!' if existing else '✅ Bet placed!'}\n\n"
-            f"Race: <b>{race.name}</b>\n"
-            f"Date: {race.date} at {race.start_time}\n\n"
-            f"Your bet:\n"
-            f"🥇 1st: {driver_1st_obj.code if driver_1st_obj else driver_1st} - {driver_1st_obj.full_name if driver_1st_obj else ''}\n"
-            f"🥈 2nd: {driver_2nd_obj.code if driver_2nd_obj else driver_2nd} - {driver_2nd_obj.full_name if driver_2nd_obj else ''}\n"
-            f"🥉 3rd: {driver_3rd_obj.code if driver_3rd_obj else driver_3rd} - {driver_3rd_obj.full_name if driver_3rd_obj else ''}\n\n"
-            f"Good luck! 🍀"
+            f"{'✅ Ставка обновлена!' if existing else '✅ Ставка сделана!'}\n\n"
+            f"Гонка: <b>{race.name}</b>\n"
+            f"Дата: {race.date} в {race.start_time}\n\n"
+            f"Ваша ставка:\n"
+            f"🥇 1-е: {driver_1st_obj.code if driver_1st_obj else driver_1st} - {driver_1st_obj.full_name if driver_1st_obj else ''}\n"
+            f"🥈 2-е: {driver_2nd_obj.code if driver_2nd_obj else driver_2nd} - {driver_2nd_obj.full_name if driver_2nd_obj else ''}\n"
+            f"🥉 3-е: {driver_3rd_obj.code if driver_3rd_obj else driver_3rd} - {driver_3rd_obj.full_name if driver_3rd_obj else ''}\n\n"
+            f"Удачи! 🍀"
         )
         
         await callback.message.edit_text(message_text)
-        await callback.answer("Bet saved!")
+        await callback.answer("Ставка сохранена!")
     except Exception as e:
-        await callback.answer("Error saving bet. Please try again.", show_alert=True)
+        await callback.answer("Ошибка при сохранении ставки. Попробуйте снова.", show_alert=True)
         await callback.message.edit_text(
-            "❌ Error saving bet. Please try again."
+            "❌ Ошибка при сохранении ставки. Попробуйте снова."
         )
     
     await state.clear()
@@ -386,7 +386,7 @@ async def callback_bet_confirm(callback: CallbackQuery, state: FSMContext):
 async def callback_cancel_bet(callback: CallbackQuery, state: FSMContext):
     """Handle bet cancellation."""
     await state.clear()
-    await callback.message.edit_text("❌ Bet cancelled.")
+    await callback.message.edit_text("❌ Ставка отменена.")
     await callback.answer()
 
 
@@ -407,9 +407,9 @@ async def cmd_my_bets(message: Message):
         
         if not bets:
             await message.answer(
-                "📋 <b>My Bets</b>\n\n"
-                "You don't have any bets yet.\n"
-                "Use /bet to place your first bet!"
+                "📋 <b>Мои ставки</b>\n\n"
+                "У вас пока нет ставок.\n"
+                "Используйте /bet, чтобы сделать первую ставку!"
             )
             return
         
@@ -444,10 +444,10 @@ async def cmd_my_bets(message: Message):
                 upcoming_bets.append(bet_info)
         
         # Build message
-        text = "📋 <b>My Bets</b>\n\n"
+        text = "📋 <b>Мои ставки</b>\n\n"
         
         if upcoming_bets:
-            text += "🏁 <b>Upcoming Races</b> (can be changed):\n\n"
+            text += "🏁 <b>Предстоящие гонки</b> (можно изменить):\n\n"
             for bet_info in upcoming_bets:
                 race = bet_info["race"]
                 bet = bet_info["bet"]
@@ -458,7 +458,7 @@ async def cmd_my_bets(message: Message):
                 text += f"3️⃣ {bet_info['driver_3rd'].code if bet_info['driver_3rd'] else bet.driver_3rd} - {bet_info['driver_3rd'].full_name if bet_info['driver_3rd'] else ''}\n\n"
         
         if finished_bets:
-            text += "✅ <b>Finished Races</b>:\n\n"
+            text += "✅ <b>Завершенные гонки</b>:\n\n"
             for bet_info in finished_bets:
                 race = bet_info["race"]
                 bet = bet_info["bet"]
@@ -475,11 +475,11 @@ async def cmd_my_bets(message: Message):
                 race = bet_info["race"]
                 bet = bet_info["bet"]
                 builder.add(InlineKeyboardButton(
-                    text=f"✏️ Change {race.name}",
+                    text=f"✏️ Изменить {race.name}",
                     callback_data=f"change_bet_{bet.id}"
                 ))
                 builder.add(InlineKeyboardButton(
-                    text=f"🗑️ Delete {race.name}",
+                    text=f"🗑️ Удалить {race.name}",
                     callback_data=f"delete_bet_{bet.id}"
                 ))
             builder.adjust(1)
@@ -502,27 +502,27 @@ async def callback_change_bet(callback: CallbackQuery, state: FSMContext):
     from services.bet_service import get_user_bets
     user = await get_user_by_telegram_id(callback.from_user.id)
     if not user:
-        await callback.answer("User not found.", show_alert=True)
+        await callback.answer("Пользователь не найден.", show_alert=True)
         return
     
     bets = await get_user_bets(user.id)
     bet = next((b for b in bets if b.id == bet_id), None)
     
     if not bet:
-        await callback.answer("Bet not found.", show_alert=True)
+        await callback.answer("Ставка не найдена.", show_alert=True)
         return
     
     # Get race
     race = await get_race_by_id(bet.race_id)
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         return
     
     # Check if betting is still open
     from services.bet_service import is_betting_open
     if not is_betting_open(race.date, race.start_time, race.timezone):
         await callback.answer(
-            "You cannot change this bet. Betting is closed for this race.",
+            "Вы не можете изменить эту ставку. Ставки на эту гонку закрыты.",
             show_alert=True
         )
         return
@@ -532,13 +532,13 @@ async def callback_change_bet(callback: CallbackQuery, state: FSMContext):
     await state.set_state(BetStates.waiting_for_1st)
     
     await callback.message.edit_text(
-        f"✏️ <b>Change Bet</b>\n\n"
-        f"Race: <b>{race.name}</b>\n"
-        f"Current bet:\n"
+        f"✏️ <b>Изменить ставку</b>\n\n"
+        f"Гонка: <b>{race.name}</b>\n"
+        f"Текущая ставка:\n"
         f"1️⃣ {bet.driver_1st}\n"
         f"2️⃣ {bet.driver_2nd}\n"
         f"3️⃣ {bet.driver_3rd}\n\n"
-        f"Select new driver for 1st place:"
+        f"Выберите нового гонщика для 1-го места:"
     )
     await callback.answer()
     await show_driver_selection_callback(callback, state, "1st")
@@ -553,27 +553,27 @@ async def callback_delete_bet(callback: CallbackQuery, state: FSMContext):
     from services.bet_service import get_user_bets, delete_bet
     user = await get_user_by_telegram_id(callback.from_user.id)
     if not user:
-        await callback.answer("User not found.", show_alert=True)
+        await callback.answer("Пользователь не найден.", show_alert=True)
         return
     
     bets = await get_user_bets(user.id)
     bet = next((b for b in bets if b.id == bet_id), None)
     
     if not bet:
-        await callback.answer("Bet not found.", show_alert=True)
+        await callback.answer("Ставка не найдена.", show_alert=True)
         return
     
     # Get race
     race = await get_race_by_id(bet.race_id)
     if not race:
-        await callback.answer("Race not found.", show_alert=True)
+        await callback.answer("Гонка не найдена.", show_alert=True)
         return
     
     # Check if betting is still open
     from services.bet_service import is_betting_open
     if not is_betting_open(race.date, race.start_time, race.timezone):
         await callback.answer(
-            "You cannot delete this bet. Betting is closed for this race.",
+            "Вы не можете удалить эту ставку. Ставки на эту гонку закрыты.",
             show_alert=True
         )
         return
@@ -585,14 +585,14 @@ async def callback_delete_bet(callback: CallbackQuery, state: FSMContext):
     driver_3rd = await get_driver_by_code(bet.driver_3rd)
     
     await callback.message.edit_text(
-        f"🗑️ <b>Delete Bet</b>\n\n"
-        f"Race: <b>{race.name}</b>\n"
-        f"Date: {race.date} at {race.start_time}\n\n"
-        f"Your bet:\n"
+        f"🗑️ <b>Удалить ставку</b>\n\n"
+        f"Гонка: <b>{race.name}</b>\n"
+        f"Дата: {race.date} в {race.start_time}\n\n"
+        f"Ваша ставка:\n"
         f"1️⃣ {driver_1st.code if driver_1st else bet.driver_1st} - {driver_1st.full_name if driver_1st else ''}\n"
         f"2️⃣ {driver_2nd.code if driver_2nd else bet.driver_2nd} - {driver_2nd.full_name if driver_2nd else ''}\n"
         f"3️⃣ {driver_3rd.code if driver_3rd else bet.driver_3rd} - {driver_3rd.full_name if driver_3rd else ''}\n\n"
-        f"Are you sure you want to delete this bet?",
+        f"Вы уверены, что хотите удалить эту ставку?",
         reply_markup=get_confirm_keyboard(f"confirm_delete_bet_{bet.id}", "cancel_delete_bet")
     )
     await callback.answer()
@@ -607,38 +607,38 @@ async def callback_confirm_delete_bet(callback: CallbackQuery):
     from services.bet_service import get_user_bets, delete_bet
     user = await get_user_by_telegram_id(callback.from_user.id)
     if not user:
-        await callback.answer("User not found.", show_alert=True)
+        await callback.answer("Пользователь не найден.", show_alert=True)
         return
     
     bets = await get_user_bets(user.id)
     bet = next((b for b in bets if b.id == bet_id), None)
     
     if not bet:
-        await callback.answer("Bet not found.", show_alert=True)
+        await callback.answer("Ставка не найдена.", show_alert=True)
         return
     
     # Get race for name
     race = await get_race_by_id(bet.race_id)
-    race_name = race.name if race else "Unknown"
+    race_name = race.name if race else "Неизвестно"
     
     # Delete bet
     success = await delete_bet(user.id, bet.race_id)
     
     if success:
         await callback.message.edit_text(
-            f"✅ <b>Bet deleted successfully!</b>\n\n"
-            f"Deleted bet for: <b>{race_name}</b>"
+            f"✅ <b>Ставка успешно удалена!</b>\n\n"
+            f"Удалена ставка на: <b>{race_name}</b>"
         )
-        await callback.answer("Bet deleted!")
+        await callback.answer("Ставка удалена!")
     else:
-        await callback.answer("Error deleting bet. Please try again.", show_alert=True)
-        await callback.message.edit_text("❌ Error deleting bet. Please try again.")
+        await callback.answer("Ошибка при удалении ставки. Попробуйте снова.", show_alert=True)
+        await callback.message.edit_text("❌ Ошибка при удалении ставки. Попробуйте снова.")
 
 
 @router.callback_query(F.data == "cancel_delete_bet")
 async def callback_cancel_delete_bet(callback: CallbackQuery):
     """Handle delete bet cancellation."""
-    await callback.message.edit_text("❌ Deletion cancelled.")
+    await callback.message.edit_text("❌ Удаление отменено.")
     await callback.answer()
 
 
@@ -652,12 +652,12 @@ async def cmd_leaderboard(message: Message):
         
         if not leaderboard:
             await message.answer(
-                "🏆 <b>Leaderboard</b>\n\n"
-                "No points yet. Play your first race to see the leaderboard."
+                "🏆 <b>Таблица лидеров</b>\n\n"
+                "Пока нет очков. Сыграйте первую гонку, чтобы увидеть таблицу лидеров."
             )
             return
         
-        text = "🏆 <b>Leaderboard</b>\n\n"
+        text = "🏆 <b>Таблица лидеров</b>\n\n"
         
         # Medal emojis for top 3
         medals = ["🥇", "🥈", "🥉"]
@@ -668,13 +668,13 @@ async def cmd_leaderboard(message: Message):
             points = entry['total_points']
             
             medal = medals[rank - 1] if rank <= 3 else f"{rank}."
-            text += f"{medal} {name} – {points} points\n"
+            text += f"{medal} {name} – {points} очков\n"
         
         await message.answer(text)
     
     except Exception as e:
         await message.answer(
-            "Sorry, something went wrong. Please try again later."
+            "Извините, что-то пошло не так. Попробуйте позже."
         )
 
 
@@ -705,21 +705,21 @@ async def cmd_me(message: Message):
         
         if bets_count == 0:
             await message.answer(
-                "📊 <b>My Stats</b>\n\n"
-                "You don't have any bets yet.\n"
-                "Use /bet to place your first bet!"
+                "📊 <b>Моя статистика</b>\n\n"
+                "У вас пока нет ставок.\n"
+                "Используйте /bet, чтобы сделать первую ставку!"
             )
             return
         
         # Build stats message
-        text = f"📊 <b>My Stats</b>\n\n"
-        text += f"👤 <b>{user.full_name or user.username or f'User {user.telegram_id}'}</b>\n\n"
-        text += f"🏆 Total points: <b>{total_points}</b>\n"
-        text += f"🏁 Races bet on: <b>{bets_count}</b>\n\n"
+        text = f"📊 <b>Моя статистика</b>\n\n"
+        text += f"👤 <b>{user.full_name or user.username or f'Пользователь {user.telegram_id}'}</b>\n\n"
+        text += f"🏆 Всего очков: <b>{total_points}</b>\n"
+        text += f"🏁 Гонок со ставками: <b>{bets_count}</b>\n\n"
         
         # Show last 5 races with points
         if points_per_race:
-            text += "📈 <b>Recent Races:</b>\n\n"
+            text += "📈 <b>Последние гонки:</b>\n\n"
             for race_data in points_per_race[:5]:  # Last 5 races
                 race_name = race_data['race_name']
                 race_date = race_data['race_date']
@@ -736,18 +736,18 @@ async def cmd_me(message: Message):
                     driver_3rd = await get_driver_by_code(bet.driver_3rd)
                     
                     text += f"🏁 <b>{race_name}</b> ({race_date})\n"
-                    text += f"   Bet: {driver_1st.code if driver_1st else bet.driver_1st}, "
+                    text += f"   Ставка: {driver_1st.code if driver_1st else bet.driver_1st}, "
                     text += f"{driver_2nd.code if driver_2nd else bet.driver_2nd}, "
                     text += f"{driver_3rd.code if driver_3rd else bet.driver_3rd}\n"
-                    text += f"   Points: <b>{points}</b>\n\n"
+                    text += f"   Очки: <b>{points}</b>\n\n"
                 else:
                     text += f"🏁 <b>{race_name}</b> ({race_date})\n"
-                    text += f"   Points: <b>{points}</b>\n\n"
+                    text += f"   Очки: <b>{points}</b>\n\n"
         else:
             # Show last bets without points (if results not entered yet)
             bets = await get_user_bets(user.id)
             if bets:
-                text += "📋 <b>Recent Bets:</b>\n\n"
+                text += "📋 <b>Последние ставки:</b>\n\n"
                 for bet in bets[:3]:  # Last 3 bets
                     race = await get_race_by_id(bet.race_id)
                     if race:
@@ -756,15 +756,15 @@ async def cmd_me(message: Message):
                         driver_3rd = await get_driver_by_code(bet.driver_3rd)
                         
                         text += f"🏁 <b>{race.name}</b> ({race.date})\n"
-                        text += f"   Bet: {driver_1st.code if driver_1st else bet.driver_1st}, "
+                        text += f"   Ставка: {driver_1st.code if driver_1st else bet.driver_1st}, "
                         text += f"{driver_2nd.code if driver_2nd else bet.driver_2nd}, "
                         text += f"{driver_3rd.code if driver_3rd else bet.driver_3rd}\n"
-                        text += f"   Points: Not calculated yet\n\n"
+                        text += f"   Очки: Еще не подсчитаны\n\n"
         
         await message.answer(text)
     
     except Exception as e:
         await message.answer(
-            "Sorry, something went wrong. Please try again later."
+            "Извините, что-то пошло не так. Попробуйте позже."
         )
 

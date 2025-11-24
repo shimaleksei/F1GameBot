@@ -6,11 +6,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def get_admin_races_menu() -> InlineKeyboardMarkup:
     """Get admin races management menu keyboard (C-006)."""
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="📋 View races", callback_data="admin_races_view"))
-    builder.add(InlineKeyboardButton(text="➕ Add race", callback_data="admin_races_add"))
-    builder.add(InlineKeyboardButton(text="✏️ Edit race", callback_data="admin_races_edit"))
-    builder.add(InlineKeyboardButton(text="🗑️ Delete race", callback_data="admin_races_delete"))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data="admin_races_cancel"))
+    builder.add(InlineKeyboardButton(text="📋 Просмотр гонок", callback_data="admin_races_view"))
+    builder.add(InlineKeyboardButton(text="➕ Добавить гонку", callback_data="admin_races_add"))
+    builder.add(InlineKeyboardButton(text="✏️ Редактировать гонку", callback_data="admin_races_edit"))
+    builder.add(InlineKeyboardButton(text="🗑️ Удалить гонку", callback_data="admin_races_delete"))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data="admin_races_cancel"))
     builder.adjust(2, 2, 1)
     return builder.as_markup()
 
@@ -24,7 +24,7 @@ def get_race_list_keyboard(races: list, prefix: str = "race") -> InlineKeyboardM
             text=f"{status_emoji} {race.name}",
             callback_data=f"{prefix}_{race.id}"
         ))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data="cancel"))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data="cancel"))
     builder.adjust(1)
     return builder.as_markup()
 
@@ -32,8 +32,8 @@ def get_race_list_keyboard(races: list, prefix: str = "race") -> InlineKeyboardM
 def get_confirm_keyboard(confirm_data: str, cancel_data: str = "cancel") -> InlineKeyboardMarkup:
     """Get confirmation keyboard."""
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="✅ Confirm", callback_data=confirm_data))
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data=cancel_data))
+    builder.add(InlineKeyboardButton(text="✅ Подтвердить", callback_data=confirm_data))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data=cancel_data))
     builder.adjust(2)
     return builder.as_markup()
 
@@ -41,6 +41,6 @@ def get_confirm_keyboard(confirm_data: str, cancel_data: str = "cancel") -> Inli
 def get_cancel_keyboard(cancel_data: str = "cancel") -> InlineKeyboardMarkup:
     """Get cancel keyboard."""
     builder = InlineKeyboardBuilder()
-    builder.add(InlineKeyboardButton(text="❌ Cancel", callback_data=cancel_data))
+    builder.add(InlineKeyboardButton(text="❌ Отмена", callback_data=cancel_data))
     return builder.as_markup()
 
