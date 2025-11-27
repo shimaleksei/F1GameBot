@@ -135,28 +135,28 @@ def _init_db_sync():
     try:
         driver_count = session.query(Driver).count()
         if driver_count == 0:
-            # Add current F1 drivers (2024-2025 season)
+            # Add current F1 drivers (2025 season)
             drivers = [
                 Driver(code="VER", full_name="Max Verstappen", is_active=True),
-                Driver(code="PER", full_name="Sergio Pérez", is_active=True),
+                Driver(code="LAW", full_name="Liam Lawson", is_active=True),
+                Driver(code="LEC", full_name="Charles Leclerc", is_active=True),
                 Driver(code="HAM", full_name="Lewis Hamilton", is_active=True),
                 Driver(code="RUS", full_name="George Russell", is_active=True),
-                Driver(code="LEC", full_name="Charles Leclerc", is_active=True),
-                Driver(code="SAI", full_name="Carlos Sainz", is_active=True),
+                Driver(code="ANT", full_name="Andrea Kimi Antonelli", is_active=True),
                 Driver(code="NOR", full_name="Lando Norris", is_active=True),
                 Driver(code="PIA", full_name="Oscar Piastri", is_active=True),
                 Driver(code="ALO", full_name="Fernando Alonso", is_active=True),
                 Driver(code="STR", full_name="Lance Stroll", is_active=True),
                 Driver(code="GAS", full_name="Pierre Gasly", is_active=True),
+                Driver(code="DOO", full_name="Jack Doohan", is_active=True),
+                Driver(code="ALB", full_name="Alex Albon", is_active=True),
+                Driver(code="SAI", full_name="Carlos Sainz Jr.", is_active=True),
                 Driver(code="OCO", full_name="Esteban Ocon", is_active=True),
-                Driver(code="ALB", full_name="Alexander Albon", is_active=True),
-                Driver(code="SAR", full_name="Logan Sargeant", is_active=True),
-                Driver(code="BOT", full_name="Valtteri Bottas", is_active=True),
-                Driver(code="ZHO", full_name="Guanyu Zhou", is_active=True),
-                Driver(code="HUL", full_name="Nico Hülkenberg", is_active=True),
-                Driver(code="MAG", full_name="Kevin Magnussen", is_active=True),
-                Driver(code="RIC", full_name="Daniel Ricciardo", is_active=True),
+                Driver(code="BEA", full_name="Oliver Bearman", is_active=True),
                 Driver(code="TSU", full_name="Yuki Tsunoda", is_active=True),
+                Driver(code="HAD", full_name="Isack Hadjar", is_active=True),
+                Driver(code="HUL", full_name="Nico Hülkenberg", is_active=True),
+                Driver(code="BOR", full_name="Gabriel Bortoleto", is_active=True),
             ]
             session.add_all(drivers)
             session.commit()
