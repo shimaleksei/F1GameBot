@@ -125,6 +125,17 @@ engine = create_engine(f"sqlite:///{DATABASE_PATH}", echo=False)
 
 def _init_db_sync():
     """Synchronous helper for init_db."""
+    import os
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Check if database file exists
+    db_exists = os.path.exists(DATABASE_PATH)
+    if db_exists:
+        logger.info(f"Database file exists: {DATABASE_PATH}")
+    else:
+        logger.info(f"Database file does not exist, will be created: {DATABASE_PATH}")
+    
     # Create all tables (only creates if they don't exist - doesn't drop existing tables)
     Base.metadata.create_all(engine)
     
@@ -144,7 +155,7 @@ def _init_db_sync():
                     # Set is_allowed=True for existing admins
                     conn.execute(text("UPDATE users SET is_allowed = 1 WHERE is_admin = 1"))
                     conn.commit()
-                print("Added is_allowed column to users table")
+                logger.info("Added is_allowed column to users table")
             else:
                 # Ensure all admins are allowed (in case admin status changed)
                 with engine.connect() as conn:
@@ -152,7 +163,7 @@ def _init_db_sync():
                     conn.commit()
     except Exception as e:
         # If migration fails, continue - the column might already exist or table doesn't exist yet
-        print(f"Migration note: {str(e)}")
+        logger.warning(f"Migration note: {str(e)}")
     
     # Seed initial drivers if table is empty
     from sqlalchemy.orm import sessionmaker
@@ -160,6 +171,21 @@ def _init_db_sync():
     session = SessionLocal()
     
     try:
+        # Log existing data counts
+        from database import User, Race, Bet, RaceResult, PointsPerRace
+        user_count = session.query(User).count()
+        race_count = session.query(Race).count()
+        bet_count = session.query(Bet).count()
+        result_count = session.query(RaceResult).count()
+        points_count = session.query(PointsPerRace).count()
+        
+        logger.info(f"Database initialized. Existing data:")
+        logger.info(f"  - Users: {user_count}")
+        logger.info(f"  - Races: {race_count}")
+        logger.info(f"  - Bets: {bet_count}")
+        logger.info(f"  - Results: {result_count}")
+        logger.info(f"  - Points: {points_count}")
+        
         driver_count = session.query(Driver).count()
         if driver_count == 0:
             # Add current F1 drivers (2025 season)
@@ -187,7 +213,9 @@ def _init_db_sync():
             ]
             session.add_all(drivers)
             session.commit()
-            print(f"Seeded {len(drivers)} drivers")
+            logger.info(f"Seeded {len(drivers)} drivers")
+        else:
+            logger.info(f"Drivers already exist: {driver_count}")
     finally:
         session.close()
 

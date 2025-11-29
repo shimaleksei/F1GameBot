@@ -6,7 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
-from config import BOT_TOKEN, validate_config
+from config import BOT_TOKEN, DATABASE_PATH, validate_config
 from database import init_db
 from handlers import user_handlers, admin_handlers
 
@@ -29,8 +29,9 @@ async def main():
     
     # Initialize database
     logger.info("Initializing database...")
+    logger.info(f"Database path: {DATABASE_PATH}")
     await init_db()
-    logger.info("Database initialized")
+    logger.info("Database initialized successfully")
     
     # Initialize bot and dispatcher with FSM storage
     storage = MemoryStorage()

@@ -18,7 +18,12 @@ ADMIN_IDS: List[int] = [
 ]
 
 # Database configuration
+# Use absolute path if provided, otherwise use relative path in current directory
+# IMPORTANT: On servers where working directory may be cleared, use absolute path via DATABASE_PATH env var
 DATABASE_PATH = os.getenv("DATABASE_PATH", "f1bot.db")
+# Convert to absolute path if relative (helps with persistence)
+if not os.path.isabs(DATABASE_PATH):
+    DATABASE_PATH = os.path.abspath(DATABASE_PATH)
 
 # Default timezone (supports both TIMEZONE and DEFAULT_TIMEZONE for compatibility)
 DEFAULT_TIMEZONE = os.getenv("TIMEZONE") or os.getenv("DEFAULT_TIMEZONE", "UTC")
