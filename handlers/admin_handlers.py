@@ -748,13 +748,17 @@ async def cmd_admin_users(message: Message):
                 # If is_allowed doesn't exist, treat as allowed for backward compatibility
                 allowed_users.append(user)
         
+        from html import escape
+        
         text = "👥 <b>Управление пользователями</b>\n\n"
         
         if allowed_users:
             text += "✅ <b>Разрешенные пользователи:</b>\n"
             for user in allowed_users:
                 name = user.full_name or user.username or f"User {user.telegram_id}"
-                username_str = f" @{user.username}" if user.username else ""
+                # Escape HTML characters in user data
+                name = escape(str(name))
+                username_str = f" @{escape(str(user.username))}" if user.username else ""
                 admin_mark = " (админ)" if user.is_admin else ""
                 text += f"• {name}{username_str} (ID: {user.telegram_id}){admin_mark}\n"
             text += "\n"
@@ -763,14 +767,16 @@ async def cmd_admin_users(message: Message):
             text += "❌ <b>Ожидающие доступа:</b>\n"
             for user in not_allowed_users:
                 name = user.full_name or user.username or f"User {user.telegram_id}"
-                username_str = f" @{user.username}" if user.username else ""
+                # Escape HTML characters in user data
+                name = escape(str(name))
+                username_str = f" @{escape(str(user.username))}" if user.username else ""
                 text += f"• {name}{username_str} (ID: {user.telegram_id})\n"
             text += "\n"
         
         text += "Используйте команды:\n"
-        text += "• /allow_user <ID или @username> - разрешить доступ\n"
-        text += "• /deny_user <ID или @username> - запретить доступ\n"
-        text += "• /user_info <ID или @username> - информация о пользователе\n\n"
+        text += "• /allow_user ID или @username - разрешить доступ\n"
+        text += "• /deny_user ID или @username - запретить доступ\n"
+        text += "• /user_info ID или @username - информация о пользователе\n\n"
         text += "Примеры:\n"
         text += "• /allow_user 123456789\n"
         text += "• /allow_user @username"
@@ -797,7 +803,7 @@ async def cmd_allow_user(message: Message):
         args = message.text.split()[1:] if message.text else []
         if not args:
             await message.answer(
-                "❌ <b>Использование:</b> /allow_user <ID или @username>\n\n"
+                "❌ <b>Использование:</b> /allow_user ID или @username\n\n"
                 "Примеры:\n"
                 "• /allow_user 123456789\n"
                 "• /allow_user @username"
@@ -860,7 +866,7 @@ async def cmd_deny_user(message: Message):
         args = message.text.split()[1:] if message.text else []
         if not args:
             await message.answer(
-                "❌ <b>Использование:</b> /deny_user <ID или @username>\n\n"
+                "❌ <b>Использование:</b> /deny_user ID или @username\n\n"
                 "Примеры:\n"
                 "• /deny_user 123456789\n"
                 "• /deny_user @username"
@@ -930,7 +936,7 @@ async def cmd_user_info(message: Message):
         args = message.text.split()[1:] if message.text else []
         if not args:
             await message.answer(
-                "❌ <b>Использование:</b> /user_info <ID или @username>\n\n"
+                "❌ <b>Использование:</b> /user_info ID или @username\n\n"
                 "Примеры:\n"
                 "• /user_info 123456789\n"
                 "• /user_info @username"
