@@ -41,8 +41,10 @@ async def main():
     dp = Dispatcher(storage=storage)
     
     # Register routers
-    dp.include_router(user_handlers.router)
+    # IMPORTANT: admin_handlers must be registered BEFORE user_handlers
+    # to ensure admin commands are processed before the catch-all handler
     dp.include_router(admin_handlers.router)
+    dp.include_router(user_handlers.router)
     
     # Start polling
     logger.info("Starting bot...")

@@ -69,7 +69,7 @@ async def cmd_admin_races(message: Message):
     )
 
 
-@router.message(Command("admin_races"))
+@router.message(Command("admin_races"), ~AdminFilter())
 async def cmd_admin_races_not_admin(message: Message):
     """Handle /admin_races command for non-admins."""
     await message.answer("Вам не разрешено использовать эту команду.")
@@ -487,7 +487,7 @@ async def cmd_results(message: Message, state: FSMContext):
     )
 
 
-@router.message(Command("results"))
+@router.message(Command("results"), ~AdminFilter())
 async def cmd_results_not_admin(message: Message):
     """Handle /results command for non-admins."""
     await message.answer("Вам не разрешено вводить результаты.")

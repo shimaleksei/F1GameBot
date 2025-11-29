@@ -782,9 +782,10 @@ async def cmd_me(message: Message):
 
 # Handler for non-allowed users trying to use commands
 # This must be the last handler to catch all messages from non-allowed users
-@router.message()
+# IMPORTANT: This handler should NOT catch commands - only regular text messages
+@router.message(F.text & ~F.text.startswith("/"))
 async def handle_non_allowed_user(message: Message):
-    """Handle messages from users who are not allowed (must be last handler)."""
+    """Handle text messages (not commands) from users who are not allowed."""
     # Skip if user is admin (always allowed)
     if is_admin(message.from_user.id):
         return
