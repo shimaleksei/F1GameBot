@@ -84,6 +84,13 @@ def _delete_race_sync(race_id: int) -> bool:
         race = session.query(Race).filter(Race.id == race_id).first()
         if not race:
             return False
+        
+        # Delete related points before deleting race
+        # This ensures leaderboard is recalculated correctly
+        from database import PointsPerRace
+        session.query(PointsPerRace).filter(PointsPerRace.race_id == race_id).delete()
+        
+        # Delete the race (bets and results will be deleted via cascade)
         session.delete(race)
         session.commit()
         return True
