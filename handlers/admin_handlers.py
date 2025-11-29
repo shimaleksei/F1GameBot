@@ -26,6 +26,7 @@ from services.result_service import (
     calculate_and_save_points
 )
 from services.driver_service import get_all_drivers, get_driver_by_code
+from services.user_service import get_all_users, get_user_by_telegram_id, set_user_allowed
 from utils.keyboards import get_race_list_keyboard, get_confirm_keyboard, get_cancel_keyboard
 from config import DEFAULT_TIMEZONE
 
@@ -707,4 +708,243 @@ async def callback_cancel_results(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text("❌ Ввод результатов отменен.")
     await callback.answer()
+
+
+# User management (whitelist)
+@router.message(Command("admin_users"), AdminFilter())
+async def cmd_admin_users(message: Message):
+    """Handle /admin_users command for managing user whitelist."""
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    from aiogram.types import InlineKeyboardButton
+    
+    users = await get_all_users()
+    
+    if not users:
+        await message.answer(
+            "👥 <b>Управление пользователями</b>\n\n"
+            "Пользователи не найдены."
+        )
+        return
+    
+    # Separate allowed and not allowed users
+    allowed_users = [u for u in users if u.is_allowed]
+    not_allowed_users = [u for u in users if not u.is_allowed]
+    
+    text = "👥 <b>Управление пользователями</b>\n\n"
+    
+    if allowed_users:
+        text += "✅ <b>Разрешенные пользователи:</b>\n"
+        for user in allowed_users:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            admin_mark = " (админ)" if user.is_admin else ""
+            text += f"• {name}{username_str} (ID: {user.telegram_id}){admin_mark}\n"
+        text += "\n"
+    
+    if not_allowed_users:
+        text += "❌ <b>Ожидающие доступа:</b>\n"
+        for user in not_allowed_users:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            text += f"• {name}{username_str} (ID: {user.telegram_id})\n"
+        text += "\n"
+    
+    text += "Используйте команды:\n"
+    text += "• /allow_user <ID или @username> - разрешить доступ\n"
+    text += "• /deny_user <ID или @username> - запретить доступ\n"
+    text += "• /user_info <ID или @username> - информация о пользователе\n\n"
+    text += "Примеры:\n"
+    text += "• /allow_user 123456789\n"
+    text += "• /allow_user @username"
+    
+    await message.answer(text)
+
+
+@router.message(Command("allow_user"), AdminFilter())
+async def cmd_allow_user(message: Message):
+    """Allow user access by Telegram ID or username."""
+    from services.user_service import get_user_by_username
+    
+    try:
+        # Get user identifier from command arguments
+        args = message.text.split()[1:] if message.text else []
+        if not args:
+            await message.answer(
+                "❌ <b>Использование:</b> /allow_user <ID или @username>\n\n"
+                "Примеры:\n"
+                "• /allow_user 123456789\n"
+                "• /allow_user @username"
+            )
+            return
+        
+        identifier = args[0].strip()
+        user = None
+        
+        # Try to find user by ID or username
+        if identifier.startswith('@'):
+            # Search by username
+            user = await get_user_by_username(identifier)
+        elif identifier.isdigit():
+            # Search by ID
+            user = await get_user_by_telegram_id(int(identifier))
+        else:
+            # Try as username without @
+            user = await get_user_by_username(identifier)
+        
+        if not user:
+            await message.answer(
+                f"❌ Пользователь '{identifier}' не найден.\n"
+                "Пользователь должен сначала написать боту /start."
+            )
+            return
+        
+        if user.is_allowed:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            await message.answer(
+                f"ℹ️ Пользователь {name}{username_str} уже имеет доступ."
+            )
+            return
+        
+        # Allow user
+        success = await set_user_allowed(user.telegram_id, True)
+        if success:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            await message.answer(
+                f"✅ <b>Доступ разрешен!</b>\n\n"
+                f"Пользователь: {name}{username_str}\n"
+                f"ID: {user.telegram_id}\n\n"
+                f"Теперь пользователь может использовать бота."
+            )
+        else:
+            await message.answer("❌ Ошибка при изменении доступа.")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
+
+@router.message(Command("deny_user"), AdminFilter())
+async def cmd_deny_user(message: Message):
+    """Deny user access by Telegram ID or username."""
+    from services.user_service import get_user_by_username
+    
+    try:
+        # Get user identifier from command arguments
+        args = message.text.split()[1:] if message.text else []
+        if not args:
+            await message.answer(
+                "❌ <b>Использование:</b> /deny_user <ID или @username>\n\n"
+                "Примеры:\n"
+                "• /deny_user 123456789\n"
+                "• /deny_user @username"
+            )
+            return
+        
+        identifier = args[0].strip()
+        user = None
+        
+        # Try to find user by ID or username
+        if identifier.startswith('@'):
+            # Search by username
+            user = await get_user_by_username(identifier)
+        elif identifier.isdigit():
+            # Search by ID
+            user = await get_user_by_telegram_id(int(identifier))
+        else:
+            # Try as username without @
+            user = await get_user_by_username(identifier)
+        
+        if not user:
+            await message.answer(
+                f"❌ Пользователь '{identifier}' не найден."
+            )
+            return
+        
+        # Check if user is admin (can't deny admin access)
+        from config import is_admin
+        if is_admin(user.telegram_id):
+            await message.answer(
+                "❌ Нельзя запретить доступ администратору."
+            )
+            return
+        
+        if not user.is_allowed:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            await message.answer(
+                f"ℹ️ Пользователь {name}{username_str} уже не имеет доступа."
+            )
+            return
+        
+        # Deny user
+        success = await set_user_allowed(user.telegram_id, False)
+        if success:
+            name = user.full_name or user.username or f"User {user.telegram_id}"
+            username_str = f" @{user.username}" if user.username else ""
+            await message.answer(
+                f"❌ <b>Доступ запрещен</b>\n\n"
+                f"Пользователь: {name}{username_str}\n"
+                f"ID: {user.telegram_id}\n\n"
+                f"Пользователь больше не может использовать бота."
+            )
+        else:
+            await message.answer("❌ Ошибка при изменении доступа.")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
+
+
+@router.message(Command("user_info"), AdminFilter())
+async def cmd_user_info(message: Message):
+    """Get user information by Telegram ID or username."""
+    from services.user_service import get_user_by_username
+    
+    try:
+        # Get user identifier from command arguments
+        args = message.text.split()[1:] if message.text else []
+        if not args:
+            await message.answer(
+                "❌ <b>Использование:</b> /user_info <ID или @username>\n\n"
+                "Примеры:\n"
+                "• /user_info 123456789\n"
+                "• /user_info @username"
+            )
+            return
+        
+        identifier = args[0].strip()
+        user = None
+        
+        # Try to find user by ID or username
+        if identifier.startswith('@'):
+            # Search by username
+            user = await get_user_by_username(identifier)
+        elif identifier.isdigit():
+            # Search by ID
+            user = await get_user_by_telegram_id(int(identifier))
+        else:
+            # Try as username without @
+            user = await get_user_by_username(identifier)
+        
+        if not user:
+            await message.answer(
+                f"❌ Пользователь '{identifier}' не найден."
+            )
+            return
+        
+        from services.bet_service import get_user_bets
+        bets = await get_user_bets(user.id)
+        
+        text = (
+            f"👤 <b>Информация о пользователе</b>\n\n"
+            f"ID: {user.telegram_id}\n"
+            f"Имя: {user.full_name or 'Не указано'}\n"
+            f"Username: @{user.username or 'Не указано'}\n"
+            f"Админ: {'✅ Да' if user.is_admin else '❌ Нет'}\n"
+            f"Доступ: {'✅ Разрешен' if user.is_allowed else '❌ Запрещен'}\n"
+            f"Ставок: {len(bets)}\n"
+            f"Зарегистрирован: {user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else 'Неизвестно'}\n"
+        )
+        
+        await message.answer(text)
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {str(e)}")
 

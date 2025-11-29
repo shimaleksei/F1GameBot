@@ -31,6 +31,7 @@ class User(Base):
     username = Column(String(255), nullable=True)
     full_name = Column(String(255), nullable=True)
     is_admin = Column(Boolean, default=False, nullable=False)
+    is_allowed = Column(Boolean, default=False, nullable=False)  # Whitelist: разрешен ли доступ к боту
     wants_reminders = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

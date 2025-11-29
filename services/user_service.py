@@ -16,11 +16,13 @@ def _get_or_create_user_sync(telegram_id: int, username: Optional[str] = None, f
         
         if not user:
             # Create new user
+            # Admins are automatically allowed, others need to be approved
             user = User(
                 telegram_id=telegram_id,
                 username=username,
                 full_name=full_name,
                 is_admin=is_admin(telegram_id),
+                is_allowed=is_admin(telegram_id),  # Admins are auto-allowed
             )
             session.add(user)
             session.commit()
@@ -71,5 +73,72 @@ async def get_user_by_telegram_id(telegram_id: int) -> Optional[User]:
         None,
         _get_user_by_telegram_id_sync,
         telegram_id
+    )
+
+
+def _set_user_allowed_sync(telegram_id: int, allowed: bool) -> bool:
+    """Synchronous helper to set user allowed status."""
+    SessionLocal = get_db_sessionmaker()
+    session = SessionLocal()
+    
+    try:
+        user = session.query(User).filter(User.telegram_id == telegram_id).first()
+        if not user:
+            return False
+        user.is_allowed = allowed
+        session.commit()
+        return True
+    finally:
+        session.close()
+
+
+async def set_user_allowed(telegram_id: int, allowed: bool) -> bool:
+    """Set user allowed status (whitelist)."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        _set_user_allowed_sync,
+        telegram_id,
+        allowed
+    )
+
+
+def _get_all_users_sync() -> list:
+    """Synchronous helper to get all users."""
+    SessionLocal = get_db_sessionmaker()
+    session = SessionLocal()
+    
+    try:
+        return session.query(User).order_by(User.created_at.desc()).all()
+    finally:
+        session.close()
+
+
+async def get_all_users() -> list:
+    """Get all users."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, _get_all_users_sync)
+
+
+def _get_user_by_username_sync(username: str) -> Optional[User]:
+    """Synchronous helper to get user by username."""
+    SessionLocal = get_db_sessionmaker()
+    session = SessionLocal()
+    
+    try:
+        # Remove @ if present
+        username_clean = username.lstrip('@')
+        return session.query(User).filter(User.username == username_clean).first()
+    finally:
+        session.close()
+
+
+async def get_user_by_username(username: str) -> Optional[User]:
+    """Get user by username (with or without @)."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        _get_user_by_username_sync,
+        username
     )
 

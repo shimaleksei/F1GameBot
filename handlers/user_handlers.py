@@ -12,6 +12,7 @@ from services.race_service import get_upcoming_races, get_race_by_id
 from services.driver_service import get_all_drivers
 from services.bet_service import get_bet, create_or_update_bet, is_betting_open
 from utils.keyboards import get_cancel_keyboard
+from utils.filters import AllowedUserFilter
 from config import is_admin
 
 router = Router()
@@ -37,6 +38,15 @@ async def cmd_start_help(message: Message):
             full_name=message.from_user.full_name or message.from_user.first_name,
         )
         
+        # Check if user is allowed (admins are always allowed)
+        if not user.is_allowed and not is_admin(message.from_user.id):
+            await message.answer(
+                "🔒 <b>Доступ ограничен</b>\n\n"
+                "Этот бот доступен только для приглашенных пользователей.\n"
+                "Обратитесь к администратору для получения доступа."
+            )
+            return
+        
         # Welcome message
         welcome_text = (
             "Привет! Я бот для ставок на Формулу 1. Я помогаю делать виртуальные ставки на топ-3 гонщиков перед каждой гонкой.\n\n"
@@ -52,7 +62,7 @@ async def cmd_start_help(message: Message):
             welcome_text += (
                 "\n🔧 Команды администратора:\n"
                 "• /admin_races – управление гонками\n"
-                "• /upload_races – загрузить календарь гонок\n"
+                "• /admin_users – управление пользователями\n"
                 "• /results – ввести результаты гонки\n"
             )
         
@@ -64,7 +74,7 @@ async def cmd_start_help(message: Message):
         )
 
 
-@router.message(Command("bet"))
+@router.message(Command("bet"), AllowedUserFilter())
 async def cmd_bet(message: Message, state: FSMContext):
     """Handle /bet command (F-005, C-002)."""
     try:
@@ -390,7 +400,7 @@ async def callback_cancel_bet(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
-@router.message(Command("my_bets"))
+@router.message(Command("my_bets"), AllowedUserFilter())
 async def cmd_my_bets(message: Message):
     """Handle /my_bets command (F-006, C-003)."""
     try:
@@ -584,6 +594,7 @@ async def callback_delete_bet(callback: CallbackQuery, state: FSMContext):
     driver_2nd = await get_driver_by_code(bet.driver_2nd)
     driver_3rd = await get_driver_by_code(bet.driver_3rd)
     
+    from utils.keyboards import get_confirm_keyboard
     await callback.message.edit_text(
         f"🗑️ <b>Удалить ставку</b>\n\n"
         f"Гонка: <b>{race.name}</b>\n"
@@ -642,7 +653,7 @@ async def callback_cancel_delete_bet(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.message(Command("leaderboard"))
+@router.message(Command("leaderboard"), AllowedUserFilter())
 async def cmd_leaderboard(message: Message):
     """Handle /leaderboard command (F-008, C-004)."""
     try:
@@ -678,7 +689,7 @@ async def cmd_leaderboard(message: Message):
         )
 
 
-@router.message(Command("me", "mystats"))
+@router.message(Command("me", "mystats"), AllowedUserFilter())
 async def cmd_me(message: Message):
     """Handle /me or /mystats command (F-009, C-005)."""
     try:
@@ -768,3 +779,25 @@ async def cmd_me(message: Message):
             "Извините, что-то пошло не так. Попробуйте позже."
         )
 
+
+# Handler for non-allowed users trying to use commands
+# This must be the last handler to catch all messages from non-allowed users
+@router.message()
+async def handle_non_allowed_user(message: Message):
+    """Handle messages from users who are not allowed (must be last handler)."""
+    # Skip if user is admin (always allowed)
+    if is_admin(message.from_user.id):
+        return
+    
+    # Check if user is allowed
+    user = await get_user_by_telegram_id(message.from_user.id)
+    if user and user.is_allowed:
+        return  # User is allowed, let other handlers process
+    
+    # User is not allowed - show message
+    await message.answer(
+        "🔒 <b>Доступ ограничен</b>\n\n"
+        "Этот бот доступен только для приглашенных пользователей.\n"
+        "Обратитесь к администратору для получения доступа.\n\n"
+        "Используйте /start для проверки статуса."
+    )
