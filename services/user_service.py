@@ -35,6 +35,12 @@ def _get_or_create_user_sync(telegram_id: int, username: Optional[str] = None, f
                 user.full_name = full_name
             # Update admin status in case it changed in config
             user.is_admin = is_admin(telegram_id)
+            # IMPORTANT: Preserve is_allowed status for existing users
+            # Only auto-allow if user became admin (but don't remove if they were allowed before)
+            if user.is_admin and not user.is_allowed:
+                # If user became admin, auto-allow them
+                user.is_allowed = True
+            # If user was allowed before, keep them allowed (don't reset)
             session.commit()
             session.refresh(user)
         

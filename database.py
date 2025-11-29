@@ -125,7 +125,7 @@ engine = create_engine(f"sqlite:///{DATABASE_PATH}", echo=False)
 
 def _init_db_sync():
     """Synchronous helper for init_db."""
-    # Create all tables
+    # Create all tables (only creates if they don't exist - doesn't drop existing tables)
     Base.metadata.create_all(engine)
     
     # Migrate: Add is_allowed column if it doesn't exist
@@ -145,6 +145,11 @@ def _init_db_sync():
                     conn.execute(text("UPDATE users SET is_allowed = 1 WHERE is_admin = 1"))
                     conn.commit()
                 print("Added is_allowed column to users table")
+            else:
+                # Ensure all admins are allowed (in case admin status changed)
+                with engine.connect() as conn:
+                    conn.execute(text("UPDATE users SET is_allowed = 1 WHERE is_admin = 1"))
+                    conn.commit()
     except Exception as e:
         # If migration fails, continue - the column might already exist or table doesn't exist yet
         print(f"Migration note: {str(e)}")
