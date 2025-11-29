@@ -383,6 +383,32 @@ async def callback_bet_confirm(callback: CallbackQuery, state: FSMContext):
         
         await callback.message.edit_text(message_text)
         await callback.answer("Ставка сохранена!")
+        
+        # Send notification to all users about the bet
+        try:
+            from services.notification_service import notify_all_users_about_bet
+            user_name = user.full_name or user.username or f"User {user.telegram_id}"
+            await notify_all_users_about_bet(
+                bot=callback.bot,
+                user_name=user_name,
+                user_telegram_id=user.telegram_id,
+                race_name=race.name,
+                race_date=race.date,
+                race_time=race.start_time,
+                driver_1st=driver_1st_obj.code if driver_1st_obj else driver_1st,
+                driver_2nd=driver_2nd_obj.code if driver_2nd_obj else driver_2nd,
+                driver_3rd=driver_3rd_obj.code if driver_3rd_obj else driver_3rd,
+                driver_1st_full=driver_1st_obj.full_name if driver_1st_obj else "",
+                driver_2nd_full=driver_2nd_obj.full_name if driver_2nd_obj else "",
+                driver_3rd_full=driver_3rd_obj.full_name if driver_3rd_obj else "",
+                is_update=existing
+            )
+        except Exception as e:
+            # Log error but don't fail the bet creation
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error sending bet notification: {e}", exc_info=True)
+            
     except Exception as e:
         await callback.answer("Ошибка при сохранении ставки. Попробуйте снова.", show_alert=True)
         await callback.message.edit_text(
