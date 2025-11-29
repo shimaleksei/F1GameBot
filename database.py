@@ -128,6 +128,27 @@ def _init_db_sync():
     # Create all tables
     Base.metadata.create_all(engine)
     
+    # Migrate: Add is_allowed column if it doesn't exist
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        
+        # Check if users table exists
+        if inspector.has_table('users'):
+            columns = [col['name'] for col in inspector.get_columns('users')]
+            
+            if 'is_allowed' not in columns:
+                # Add is_allowed column to existing users table
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN is_allowed BOOLEAN DEFAULT 0"))
+                    # Set is_allowed=True for existing admins
+                    conn.execute(text("UPDATE users SET is_allowed = 1 WHERE is_admin = 1"))
+                    conn.commit()
+                print("Added is_allowed column to users table")
+    except Exception as e:
+        # If migration fails, continue - the column might already exist or table doesn't exist yet
+        print(f"Migration note: {str(e)}")
+    
     # Seed initial drivers if table is empty
     from sqlalchemy.orm import sessionmaker
     SessionLocal = sessionmaker(bind=engine)

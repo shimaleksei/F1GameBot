@@ -714,50 +714,77 @@ async def callback_cancel_results(callback: CallbackQuery, state: FSMContext):
 @router.message(Command("admin_users"), AdminFilter())
 async def cmd_admin_users(message: Message):
     """Handle /admin_users command for managing user whitelist."""
-    from aiogram.utils.keyboard import InlineKeyboardBuilder
-    from aiogram.types import InlineKeyboardButton
-    
-    users = await get_all_users()
-    
-    if not users:
-        await message.answer(
-            "👥 <b>Управление пользователями</b>\n\n"
-            "Пользователи не найдены."
-        )
-        return
-    
-    # Separate allowed and not allowed users
-    allowed_users = [u for u in users if u.is_allowed]
-    not_allowed_users = [u for u in users if not u.is_allowed]
-    
-    text = "👥 <b>Управление пользователями</b>\n\n"
-    
-    if allowed_users:
-        text += "✅ <b>Разрешенные пользователи:</b>\n"
-        for user in allowed_users:
-            name = user.full_name or user.username or f"User {user.telegram_id}"
-            username_str = f" @{user.username}" if user.username else ""
-            admin_mark = " (админ)" if user.is_admin else ""
-            text += f"• {name}{username_str} (ID: {user.telegram_id}){admin_mark}\n"
-        text += "\n"
-    
-    if not_allowed_users:
-        text += "❌ <b>Ожидающие доступа:</b>\n"
-        for user in not_allowed_users:
-            name = user.full_name or user.username or f"User {user.telegram_id}"
-            username_str = f" @{user.username}" if user.username else ""
-            text += f"• {name}{username_str} (ID: {user.telegram_id})\n"
-        text += "\n"
-    
-    text += "Используйте команды:\n"
-    text += "• /allow_user <ID или @username> - разрешить доступ\n"
-    text += "• /deny_user <ID или @username> - запретить доступ\n"
-    text += "• /user_info <ID или @username> - информация о пользователе\n\n"
-    text += "Примеры:\n"
-    text += "• /allow_user 123456789\n"
-    text += "• /allow_user @username"
-    
-    await message.answer(text)
+    try:
+        from aiogram.utils.keyboard import InlineKeyboardBuilder
+        from aiogram.types import InlineKeyboardButton
+        
+        users = await get_all_users()
+        
+        if not users:
+            await message.answer(
+                "👥 <b>Управление пользователями</b>\n\n"
+                "Пользователи не найдены."
+            )
+            return
+        
+        # Separate allowed and not allowed users
+        # Handle case where is_allowed field might not exist in old database
+        allowed_users = []
+        not_allowed_users = []
+        
+        for user in users:
+            try:
+                # Check if is_allowed attribute exists
+                is_allowed = getattr(user, 'is_allowed', None)
+                if is_allowed is None:
+                    # Field doesn't exist - assume all existing users are allowed for backward compatibility
+                    is_allowed = True
+                
+                if is_allowed:
+                    allowed_users.append(user)
+                else:
+                    not_allowed_users.append(user)
+            except AttributeError:
+                # If is_allowed doesn't exist, treat as allowed for backward compatibility
+                allowed_users.append(user)
+        
+        text = "👥 <b>Управление пользователями</b>\n\n"
+        
+        if allowed_users:
+            text += "✅ <b>Разрешенные пользователи:</b>\n"
+            for user in allowed_users:
+                name = user.full_name or user.username or f"User {user.telegram_id}"
+                username_str = f" @{user.username}" if user.username else ""
+                admin_mark = " (админ)" if user.is_admin else ""
+                text += f"• {name}{username_str} (ID: {user.telegram_id}){admin_mark}\n"
+            text += "\n"
+        
+        if not_allowed_users:
+            text += "❌ <b>Ожидающие доступа:</b>\n"
+            for user in not_allowed_users:
+                name = user.full_name or user.username or f"User {user.telegram_id}"
+                username_str = f" @{user.username}" if user.username else ""
+                text += f"• {name}{username_str} (ID: {user.telegram_id})\n"
+            text += "\n"
+        
+        text += "Используйте команды:\n"
+        text += "• /allow_user <ID или @username> - разрешить доступ\n"
+        text += "• /deny_user <ID или @username> - запретить доступ\n"
+        text += "• /user_info <ID или @username> - информация о пользователе\n\n"
+        text += "Примеры:\n"
+        text += "• /allow_user 123456789\n"
+        text += "• /allow_user @username"
+        
+        await message.answer(text)
+    except Exception as e:
+        import traceback
+        error_msg = f"❌ Ошибка при получении списка пользователей: {str(e)}\n\n"
+        error_msg += "Проверьте логи бота для деталей."
+        await message.answer(error_msg)
+        # Log the full error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in cmd_admin_users: {traceback.format_exc()}")
 
 
 @router.message(Command("allow_user"), AdminFilter())
